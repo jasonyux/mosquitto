@@ -202,11 +202,15 @@ int mux_epoll__handle(void)
 		}
 		break;
 	case 0:
+		/* now it should work xiao */
+		// printf("case 0, nothing received\n");
 		break;
 	default:
 		for(i=0; i<event_count; i++){
 			context = ep_events[i].data.ptr;
 			if(context->ident == id_client){
+				/* now it should work xiao */
+				printf("going to loop_handle_reads_writes\n");
 				loop_handle_reads_writes(context, ep_events[i].events);
 			}else if(context->ident == id_listener){
 				listensock = ep_events[i].data.ptr;
@@ -249,6 +253,7 @@ static void loop_handle_reads_writes(struct mosquitto *context, uint32_t events)
 
 #ifdef WITH_WEBSOCKETS
 	if(context->wsi){
+		printf("websocket\n");
 		struct lws_pollfd wspoll;
 		wspoll.fd = context->sock;
 		wspoll.events = (int16_t)context->events;
@@ -264,7 +269,6 @@ static void loop_handle_reads_writes(struct mosquitto *context, uint32_t events)
 			|| (context->ssl && context->state == mosq_cs_new)
 #endif
 			){
-
 		if(context->state == mosq_cs_connect_pending){
 			len = sizeof(int);
 			if(!getsockopt(context->sock, SOL_SOCKET, SO_ERROR, (char *)&err, &len)){
@@ -293,6 +297,7 @@ static void loop_handle_reads_writes(struct mosquitto *context, uint32_t events)
 			|| (context->ssl && context->state == mosq_cs_new)
 #endif
 			){
+		printf("TLS if, reading packet\n");
 
 		do{
 			rc = packet__read(context);

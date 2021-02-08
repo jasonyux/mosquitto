@@ -236,8 +236,10 @@ int mux_poll__handle(struct mosquitto__listener_sock *listensock, int listensock
 		}
 	}else{
 		loop_handle_reads_writes();
+		printf("this does work1?\n");
 
 		for(i=0; i<listensock_count; i++){
+			printf("this does work2?\n");
 			if(pollfds[i].revents & POLLIN){
 #ifdef WITH_WEBSOCKETS
 				if(listensock[i].listener->ws_context){
@@ -247,6 +249,7 @@ int mux_poll__handle(struct mosquitto__listener_sock *listensock, int listensock
 #endif
 				{
 					while((context = net__socket_accept(&listensock[i])) != NULL){
+						printf("this does work3?\n");
 						context->pollfd_index = -1;
 						mux__add_in(context);
 					}

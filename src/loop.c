@@ -105,13 +105,59 @@ static int single_publish(struct mosquitto *context, struct mosquitto_message_v5
 	return db__message_insert(context, mid, mosq_md_out, (uint8_t)msg->qos, 0, stored, msg->properties, true);
 }
 
+/* edited by xiao */
+int get_mqtt_message(struct mosquitto_message_v5 *msg)
+{
+	struct mosquitto_msg_store *stored;
+	stored = mosquitto__calloc(1, sizeof(struct mosquitto_msg_store));
+	if(stored == NULL) return MOSQ_ERR_NOMEM;
+
+	stored->topic = mosquitto__strdup(msg->topic);
+	if(stored->topic == NULL){
+		db__msg_store_free(stored);
+		return MOSQ_ERR_INVAL;
+	}
+
+	stored->qos = msg->qos;
+	if(db.config->retain_available == false){
+		stored->retain = 0;
+	}else{
+		stored->retain = msg->retain;
+	}
+
+	stored->payloadlen = msg->payloadlen;
+	stored->payload = mosquitto__malloc(stored->payloadlen+1);
+	if(stored->payload == NULL){
+		db__msg_store_free(stored);
+		return MOSQ_ERR_NOMEM;
+	}
+	/* Ensure payload is always zero terminated, this is the reason for the extra byte above */
+	((uint8_t *)stored->payload)[stored->payloadlen] = 0;
+	memcpy(stored->payload, msg->payload, stored->payloadlen);
+	printf("%s, %s\n", stored->topic, (char *)stored->payload);
+
+	return 0;
+}
 
 void queue_plugin_msgs(void)
 {
 	struct mosquitto_message_v5 *msg, *tmp;
 	struct mosquitto *context;
 
+	// printf("inside queue_lugin_msgs\n");
+	/* 
+	DL_FOREACH_SAFE(head,el,tmp)                                                           \
+	DL_FOREACH_SAFE2(head,el,tmp,next)
+	for ((el) = (head); (el) && ((tmp) = (el)->next, 1); (el) = (tmp)) 
+	*/
+	
+	/* for( msg=db.plugin_msgs; msg && (tmp=db.plugin_msgs->next, 1); msg=tmp ){
+		fprintf(stderr, "hello2\n");
+	} */
 	DL_FOREACH_SAFE(db.plugin_msgs, msg, tmp){
+		/* edited by xiao */
+		fprintf(stderr, "hello2\n");
+		printf("%s, %d\n", db.plugin_msgs->clientid, db.plugin_msgs->payloadlen);
 		DL_DELETE(db.plugin_msgs, msg);
 		if(msg->clientid){
 			HASH_FIND(hh_id, db.contexts_by_id, msg->clientid, strlen(msg->clientid), context);
@@ -121,6 +167,10 @@ void queue_plugin_msgs(void)
 		}else{
 			db__messages_easy_queue(NULL, msg->topic, (uint8_t)msg->qos, (uint32_t)msg->payloadlen, msg->payload, msg->retain, 0, &msg->properties);
 		}
+
+		/* edited by xiao */
+		get_mqtt_message(msg);
+
 		mosquitto__free(msg->topic);
 		mosquitto__free(msg->payload);
 		mosquitto_property_free_all(&msg->properties);
@@ -160,8 +210,11 @@ int mosquitto_main_loop(struct mosquitto__listener_sock *listensock, int listens
 #endif
 
 	while(run){
+		// printf("entered queue_plugin_msgs\n");
 		queue_plugin_msgs();
+		// printf("entered context__free\n");
 		context__free_disused();
+		// printf("entered keepalive\n");
 #ifdef WITH_SYS_TREE
 		if(db.config->sys_interval > 0){
 			sys_tree__update(db.config->sys_interval, start_time);
@@ -174,9 +227,11 @@ int mosquitto_main_loop(struct mosquitto__listener_sock *listensock, int listens
 		bridge_check();
 #endif
 
+		//printf("entered mux__handle\n"); MAIN ENTRY POINT
 		rc = mux__handle(listensock, listensock_count);
 		if(rc) return rc;
 
+		//printf("entered session_check\n");
 		session_expiry__check();
 		will_delay__check();
 #ifdef WITH_PERSISTENCE

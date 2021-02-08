@@ -211,7 +211,7 @@ struct mosquitto {
 	/* This *must* be the first element in the struct. */
 	int ident;
 #endif
-	mosq_sock_t sock;
+	mosq_sock_t sock; // socket to send stuff
 #ifndef WITH_BROKER
 	mosq_sock_t sockpairR, sockpairW;
 #endif

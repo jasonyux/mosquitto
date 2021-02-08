@@ -254,6 +254,7 @@ int handle__publish(struct mosquitto *context)
 
 	log__printf(NULL, MOSQ_LOG_DEBUG, "Received PUBLISH from %s (d%d, q%d, r%d, m%d, '%s', ... (%ld bytes))", context->id, dup, msg->qos, msg->retain, msg->source_mid, msg->topic, (long)msg->payloadlen);
 
+	printf("SUCCESSFULLY!!! msg=%s, length=%d, qos=%d\n", (char *)msg->payload, msg->payloadlen, msg->qos);
 	if(!strncmp(msg->topic, "$CONTROL/", 9)){
 #ifdef WITH_CONTROL
 		rc = control__process(context, msg);
@@ -265,6 +266,7 @@ int handle__publish(struct mosquitto *context)
 				return MOSQ_ERR_UNKNOWN;
 			}
 		}else if(msg->qos == 2){
+			printf("sending pubrec can't be here\n");
 			if(send__pubrec(context, msg->source_mid, MQTT_RC_SUCCESS, NULL)){
 				return MOSQ_ERR_UNKNOWN;
 			}
@@ -333,6 +335,7 @@ int handle__publish(struct mosquitto *context)
 			 * due to queue. This isn't an error so don't disconnect them. */
 			/* FIXME - this is no longer necessary due to failing early above */
 			if(!res){
+				printf("pubrec here\n");
 				if(send__pubrec(context, stored->source_mid, 0, NULL)) rc = 1;
 			}else if(res == 1){
 				rc = 1;

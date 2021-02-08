@@ -35,6 +35,7 @@ Contributors:
 int handle__packet(struct mosquitto *context)
 {
 	int rc = MOSQ_ERR_INVAL;
+	printf("decides how to handle using 'packet.command'\n");
 
 	if(!context) return MOSQ_ERR_INVAL;
 

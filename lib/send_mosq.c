@@ -123,6 +123,7 @@ int send__command_with_mid(struct mosquitto *mosq, uint8_t command, uint16_t mid
 	struct mosquitto__packet *packet = NULL;
 	int rc;
 
+	printf("forming mosquitto packet\n");
 	assert(mosq);
 	packet = mosquitto__calloc(1, sizeof(struct mosquitto__packet));
 	if(!packet) return MOSQ_ERR_NOMEM;

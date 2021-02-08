@@ -216,6 +216,7 @@ int packet__write(struct mosquitto *mosq)
 	if(mosq->sock == INVALID_SOCKET) return MOSQ_ERR_NO_CONN;
 
 #ifdef WITH_BROKER
+	printf("sending packet\n");
 	mux__add_out(mosq);
 #endif
 
@@ -366,6 +367,7 @@ int packet__read(struct mosquitto *mosq)
 	 * Finally, free the memory and reset everything to starting conditions.
 	 */
 	if(!mosq->in_packet.command){
+		printf("inside packet__read, %s\n", mosq->in_packet.payload);
 		read_length = net__read(mosq, &byte, 1);
 		if(read_length == 1){
 			mosq->in_packet.command = byte;
@@ -511,6 +513,7 @@ int packet__read(struct mosquitto *mosq)
 		G_PUB_MSGS_RECEIVED_INC(1);
 	}
 #endif
+	printf("handling packet\n");
 	rc = handle__packet(mosq);
 
 	/* Free data and reset values */
