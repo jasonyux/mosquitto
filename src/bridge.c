@@ -61,6 +61,7 @@ void bridge__start_all(void)
 {
 	int i;
 
+/* reads from config, and knows which other broker to connect to */
 	for(i=0; i<db.config->bridge_count; i++){
 		if(bridge__new(&(db.config->bridges[i]))){
 			log__printf(NULL, MOSQ_LOG_WARNING, "Warning: Unable to connect to bridge %s.", 
@@ -94,6 +95,7 @@ int bridge__new(struct mosquitto__bridge *bridge)
 		new_context->id = local_id;
 		HASH_ADD_KEYPTR(hh_id, db.contexts_by_id, new_context->id, strlen(new_context->id), new_context);
 	}
+	/* new context is the broker/bridge */
 	new_context->bridge = bridge;
 	new_context->is_bridge = true;
 
@@ -429,6 +431,7 @@ int bridge__connect(struct mosquitto *context)
 	}
 
 	log__printf(NULL, MOSQ_LOG_NOTICE, "Connecting bridge %s (%s:%d)", context->bridge->name, context->bridge->addresses[context->bridge->cur_address].address, context->bridge->addresses[context->bridge->cur_address].port);
+	/* craetes a connection to the broker's address */
 	rc = net__socket_connect(context,
 			context->bridge->addresses[context->bridge->cur_address].address,
 			context->bridge->addresses[context->bridge->cur_address].port,

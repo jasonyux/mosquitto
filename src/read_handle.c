@@ -41,28 +41,40 @@ int handle__packet(struct mosquitto *context)
 
 	switch((context->in_packet.command)&0xF0){
 		case CMD_PINGREQ:
+			printf("handle pingreq\n");
 			return handle__pingreq(context);
 		case CMD_PINGRESP:
+			printf("handle__pingresp\n");
 			return handle__pingresp(context);
 		case CMD_PUBACK:
+			printf("handle__pubackcomp\n");
 			return handle__pubackcomp(context, "PUBACK");
 		case CMD_PUBCOMP:
+			printf("handle__pubackcomp\n");
 			return handle__pubackcomp(context, "PUBCOMP");
 		case CMD_PUBLISH:
+			printf("handle__publish\n");
 			rc = handle__publish(context);
 			break;
 		case CMD_PUBREC:
+			printf("handle__pubrec\n");
 			return handle__pubrec(context);
 		case CMD_PUBREL:
+			/* before sending to other brokers */
+			printf("handle__pubrel\n");
 			return handle__pubrel(context);
 		case CMD_CONNECT:
+			printf("handle__connect\n");
 			return handle__connect(context);
 		case CMD_DISCONNECT:
+			printf("handle__disconnect\n");
 			return handle__disconnect(context);
 		case CMD_SUBSCRIBE:
+			printf("handle__subscribe\n");
 			rc = handle__subscribe(context);
 			break;
 		case CMD_UNSUBSCRIBE:
+			printf("handle__unsubscribe\n");
 			rc = handle__unsubscribe(context);
 			break;
 #ifdef WITH_BRIDGE

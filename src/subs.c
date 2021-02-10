@@ -140,6 +140,7 @@ static int subs__process(struct mosquitto__subhier *hier, const char *source_id,
 			leaf = leaf->next;
 			continue;
 		}
+		/* this is where mosquitto iterates over brokers and publish flood messages */
 		rc2 = subs__send(leaf, topic, qos, retain, stored);
 		if(rc2){
 			rc = 1;
