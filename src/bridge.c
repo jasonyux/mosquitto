@@ -78,6 +78,9 @@ int bridge__new(struct mosquitto__bridge *bridge)
 	char *local_id;
 
 	assert(bridge);
+	/* xiao's code */
+	bridge->topics->remote_topic = "exmp/#";
+	printf("configured %s\n", bridge->topics->topic);
 
 	local_id = mosquitto__strdup(bridge->local_clientid);
 
@@ -537,7 +540,7 @@ int bridge__on_connect(struct mosquitto *context)
 					| MQTT_SUB_OPT_NO_LOCAL
 					| MQTT_SUB_OPT_RETAIN_AS_PUBLISHED
 					| MQTT_SUB_OPT_SEND_RETAIN_ALWAYS;
-			}
+			} /* subscribes to remote_topic */
 			if(send__subscribe(context, NULL, 1, &context->bridge->topics[i].remote_topic, sub_opts, NULL)){
 				return 1;
 			}
