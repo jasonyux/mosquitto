@@ -79,7 +79,6 @@ int bridge__new(struct mosquitto__bridge *bridge)
 
 	assert(bridge);
 	/* xiao's code */
-	bridge->topics->remote_topic = "exmp/#";
 	printf("configured %s\n", bridge->topics->topic);
 
 	local_id = mosquitto__strdup(bridge->local_clientid);

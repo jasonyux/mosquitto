@@ -167,14 +167,34 @@ int handle__subscribe(struct mosquitto *context)
 			}
 			log__printf(NULL, MOSQ_LOG_DEBUG, "\t%s (QoS %d)", sub, qos);
 
-			bridge__connect(context);
-			struct mosquitto_db my_db = db;
-			// context->bridge = db.bridges[0];
-			printf("test %d\n", my_db.bridge_count-1);
-			char *my_topics[1];
-			my_topics[0] = "test/sub";
-			send__subscribe(db.bridges[0], NULL, 1, my_topics, 1, NULL);
-			// send__subscribe(context, NULL, 1, "test/topic", 1, NULL);
+			/* start of subscription flooding code */
+
+			// if there are bridges configured
+			if (db.bridge_count){
+				printf("sending subscribe to %d bridges\n", db.bridge_count);
+				for(int i=0; i<db.bridge_count; i++){
+					int old_topics_num = db.bridges[i]->bridge->topic_count;
+					struct mosquitto__bridge_topic *old_topics = db.bridges[i]->bridge->topics;
+					/* It seems that subscribing multiple subscriptions is basically done by several calls of this to a single topic
+					* Therefore, a fixed size would work. However, it would be an optimization task to accept multiple messages once.
+					*/
+					int new_topics_num = 1;
+					int same_topic = 0;
+					for (int j = 0; j < old_topics_num; j++){
+						char *old_topic = old_topics[j].remote_topic;
+						if (strlen(old_topic) == strlen(sub) && strncmp(old_topic, sub, strlen(sub)))
+							same_topic++;
+					}
+					if (!same_topic){
+						char *new_topics[new_topics_num];
+						new_topics[0] = sub;
+						send__subscribe(db.bridges[i], NULL, 1, new_topics, qos, NULL);
+					}
+
+				}
+			}
+
+			/* start of subscription flooding code */
 
 			allowed = true;
 			rc2 = mosquitto_acl_check(context, sub, 0, NULL, qos, false, MOSQ_ACL_SUBSCRIBE);
