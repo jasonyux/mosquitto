@@ -71,6 +71,9 @@ int recursive_sub(char *from_id, char *to_id)
 	strcpy(from_id_cpy, from_id);
 	strcpy(to_id_cpy, to_id);
 
+	/* somehow mosquitto appends prefixes to names. For example:
+	 * - connection "b1->b2" becomes "asdasddx1.b1->b2"
+	 */
 	char *from_id_cpy_tmp = strip_until_char(from_id_cpy, prefix);
 	char *to_id_cpy_tmp = strip_until_char(to_id_cpy, prefix);
 	printf("processed ids: %s and %s\n", from_id_cpy_tmp, to_id_cpy_tmp);
@@ -270,25 +273,13 @@ int handle__subscribe(struct mosquitto *context)
 					char *local_prefix = "local.";
 					/* strip the local prefix for the db generated name*/
 					toSender = strip_prefix(toSender, local_prefix);
-					
-					///* on error, just continue and not send it*/
-					//if(snprintf(toSender, sizeof(toSender), "ubuntu.bridge-%d", db.config->listeners->port) <= 0)
-					//	continue;
 
 					/* send if:
 						1. the topic is not redundant (compared to list of topics already subscribed)
-						2. not sending the subscription back to the broker, who actually sent it to me
+						2. not sending the subscription back to the broker, who actually sent it to me (recursive)
 					 */
-					/* char *expectedTemplate = "ubuntu.bridge-dddd";
-					int cmpSize = strlen(expectedTemplate) < strlen(fromSender) ? strlen(expectedTemplate): strlen(fromSender);
-					if (!same_topic && strncmp(fromSender, toSender, (size_t) cmpSize)){
-						char *new_topics[new_topics_num];
-						new_topics[0] = sub;
-						send__subscribe(db.bridges[i], NULL, 1, new_topics, qos, NULL);
-					} */
-
 					if (!same_topic && !recursive_sub(toSender, fromSender)){
-						printf("my subflooding send\n");
+						printf("my subflooding sending to bridge:%s\n", db.bridges[i]->bridge->name);
 						char *new_topics[new_topics_num];
 						new_topics[0] = sub;
 						send__subscribe(db.bridges[i], NULL, 1, new_topics, qos, NULL);
