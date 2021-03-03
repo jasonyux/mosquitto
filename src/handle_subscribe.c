@@ -35,17 +35,35 @@ char *strip_prefix(char *text, char* prefix)
 	char *tmp_prefix = prefix;
 	/* strip the local prefix for the db generated name*/
 	size_t strip_count = strlen(prefix);
-	while(*text && *tmp_prefix && *text++ == *tmp_prefix++)
+	while(*tmp && *tmp_prefix && *tmp++ == *tmp_prefix++)
 		strip_count--;
 	/* resets if not matching */
 	if(strip_count)
-		text = tmp;
-	return text;
+		tmp = text;
+	return tmp;
+}
+
+char *strip_until_char(char *text, const char prefix)
+{
+	char *tmp = text;
+	int striped = 0;
+	while(*tmp){
+		if(*tmp == prefix){
+			tmp++;
+			striped = 1;
+			break;
+		}
+		tmp++;
+	}
+	/* resets if not matching */
+	if(!striped)
+		tmp = text;
+	return tmp;
 }
 
 int recursive_sub(char *from_id, char *to_id)
 {
-	char *prefix = "ubuntu.", *tok;
+	char prefix = '.', *tok;
 	char *mapping_symbol = "->";
 
 	char *from_id_cpy = malloc(strlen(from_id)+1);
@@ -53,8 +71,9 @@ int recursive_sub(char *from_id, char *to_id)
 	strcpy(from_id_cpy, from_id);
 	strcpy(to_id_cpy, to_id);
 
-	char *from_id_cpy_tmp = strip_prefix(from_id_cpy, prefix);
-	char *to_id_cpy_tmp = strip_prefix(to_id_cpy, prefix);
+	char *from_id_cpy_tmp = strip_until_char(from_id_cpy, prefix);
+	char *to_id_cpy_tmp = strip_until_char(to_id_cpy, prefix);
+	printf("processed ids: %s and %s\n", from_id_cpy_tmp, to_id_cpy_tmp);
 
 	char *from_f_t[2];
 	char *to_f_t[2];
