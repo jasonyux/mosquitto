@@ -60,6 +60,91 @@ Contributors:
 
 #include "utlist.h"
 
+/* code added by Xiao */
+char *strip_prefix_2(char *text, char* prefix)
+{
+	char *tmp = text;
+	char *tmp_prefix = prefix;
+	/* strip the local prefix for the db generated name*/
+	size_t strip_count = strlen(prefix);
+	while(*tmp && *tmp_prefix && *tmp++ == *tmp_prefix++)
+		strip_count--;
+	/* resets if not matching */
+	if(strip_count)
+		tmp = text;
+	return tmp;
+}
+
+char *strip_until_char_2(char *text, const char prefix)
+{
+	char *tmp = text;
+	int striped = 0;
+	while(*tmp){
+		if(*tmp == prefix){
+			tmp++;
+			striped = 1;
+			break;
+		}
+		tmp++;
+	}
+	/* resets if not matching */
+	if(!striped)
+		tmp = text;
+	return tmp;
+}
+
+int recursive_pub(char *from_id, char *to_id)
+{
+	char prefix = '.', *tok;
+	char *mapping_symbol = "->";
+
+	char *from_id_cpy = malloc(strlen(from_id)+1);
+	char *to_id_cpy = malloc(strlen(to_id)+1);
+	strcpy(from_id_cpy, from_id);
+	strcpy(to_id_cpy, to_id);
+
+	/* somehow mosquitto appends prefixes to names. For example:
+	 * - connection "b1->b2" becomes "asdasddx1.b1->b2"
+	 */
+	char *from_id_cpy_tmp = strip_until_char_2(from_id_cpy, prefix);
+	char *to_id_cpy_tmp = strip_until_char_2(to_id_cpy, prefix);
+	printf("processed ids: %s and %s\n", from_id_cpy_tmp, to_id_cpy_tmp);
+
+	char *from_f_t[2];
+	char *to_f_t[2];
+
+	int i = 0;
+	tok = strtok(from_id_cpy_tmp, mapping_symbol);
+	while(tok && i<2){
+		from_f_t[i++] = tok;
+		tok = strtok(NULL, mapping_symbol);
+	}
+	
+	int j = 0;
+	tok = strtok(to_id_cpy_tmp, mapping_symbol);
+	while(tok && j<2){
+		to_f_t[j++] = tok;
+		tok = strtok(NULL, mapping_symbol);
+	}
+
+	/* recursive if b1->b7 and b7->b1 */
+	int result = 0;
+	if(i==2 && j==2){
+		printf("comparing %s->%s and %s->%s\n", from_f_t[0], from_f_t[1], to_f_t[0], to_f_t[1]);
+		if((strcmp(from_f_t[0], to_f_t[1]) == 0) && (strcmp(from_f_t[1], to_f_t[0]) == 0)){
+			result = 1;
+		}
+		printf("same (1=true)? %d\n", result);
+	}
+	
+	free(from_id_cpy);
+	free(to_id_cpy);
+
+	return result;
+}
+
+/* end of code by Xiao */
+
 static int subs__send(struct mosquitto__subleaf *leaf, const char *topic, uint8_t qos, int retain, struct mosquitto_msg_store *stored)
 {
 	bool client_retain;
@@ -140,11 +225,26 @@ static int subs__process(struct mosquitto__subhier *hier, const char *source_id,
 			leaf = leaf->next;
 			continue;
 		}
-		/* this is where mosquitto iterates over brokers and publish flood messages */
-		rc2 = subs__send(leaf, topic, qos, retain, stored);
-		if(rc2){
-			rc = 1;
+		/* Xiao's code, recursive pub detection */
+		printf("I got %s\n", source_id);
+		char fromSender[strlen(source_id)+1];
+		strcpy(fromSender, source_id);
+		printf("I copied %s\n", fromSender);
+
+		char *toSender = leaf->context->id;
+		char *local_prefix = "local.";
+		/* TODO: move those code ot util_mosq */
+		strcpy(fromSender, strip_prefix_2(fromSender, local_prefix));
+		printf("I stripped to %s\n", fromSender);
+
+		if (!recursive_pub(toSender, fromSender)){
+			rc2 = subs__send(leaf, topic, qos, retain, stored);
+			if(rc2){
+				rc = 1;
+			}
 		}
+		/* this is where mosquitto iterates over brokers and publish flood messages */
+		
 		leaf = leaf->next;
 	}
 	if(hier->subs || hier->shared){
@@ -497,6 +597,7 @@ static int sub__search(struct mosquitto__subhier *subhier, char **split_topics, 
 		}
 
 		/* Check for + match */
+		/* Topic containment? */
 		HASH_FIND(hh, subhier->children, "+", 1, branch);
 
 		if(branch){

@@ -266,7 +266,6 @@ int handle__publish(struct mosquitto *context)
 				return MOSQ_ERR_UNKNOWN;
 			}
 		}else if(msg->qos == 2){
-			printf("sending pubrec can't be here\n");
 			if(send__pubrec(context, msg->source_mid, MQTT_RC_SUCCESS, NULL)){
 				return MOSQ_ERR_UNKNOWN;
 			}
